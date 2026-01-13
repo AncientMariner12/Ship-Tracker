@@ -1,84 +1,59 @@
-// Ship Tracker Application
-// This script connects to the AISstream.io WebSocket API to receive real-time ship position data
-// and displays the ships as markers on an interactive Leaflet map.
+const API_KEY = "223414.29UK92apIJ4FLU";
 
-// Initialize the Leaflet map
-// Center the map at coordinates [50, 0] (English Channel) with zoom level 7
-let map = L.map('map').setView([50, 0], 7);
+// Add as many ships as you want here, separated by commas
+// Examples include "OH7RDA" (test station) or real ship names/MMSIs
+const callsigns = ["SHIP1", "SHIP2", "OH7RDA", "MMSI244660429"]; 
 
-// Add OpenStreetMap tiles to the map
-// This provides the base map layer with attribution to OpenStreetMap contributors
+const map = L.map('map').setView([50, 0], 2);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// Create a Map object to store ship markers by their MMSI (Maritime Mobile Service Identity)
-// This allows us to update existing markers instead of creating duplicates
-let markers = new Map();
+const markers = new Map();
 
-// Define a custom ship icon using a ship emoji
-let shipIcon = L.divIcon({
-    html: '<div style="font-size: 32px; color: red;">🚢</div>',
-    className: 'ship-icon',
-    iconSize: [32, 32],
-    iconAnchor: [16, 16] // Center the icon on the ship's position
+const shipIcon = L.divIcon({
+    html: '<div style="font-size: 24px;">🚢</div>',
+    className: 'ship-marker',
+    iconSize: [30, 30]
 });
 
-// Add a test marker to verify markers work
-L.marker([50, 0], {icon: shipIcon}).addTo(map).bindPopup('Test Ship - If you see this, markers work!');
-
-// Create a WebSocket connection to the AISstream.io real-time data stream
-const socket = new WebSocket("wss://stream.aisstream.io/v0/stream");
-
-// Event handler for WebSocket errors
-socket.onerror = function(error) {
-    console.error('WebSocket error:', error);
-};
-
-// Event handler for WebSocket close
-socket.onclose = function(event) {
-    console.log('WebSocket closed:', event.code, event.reason);
-};
-
-// Event handler for when the WebSocket connection opens
-socket.onopen = function() {
-    console.log('WebSocket connection opened');
-    // Define the subscription message to request specific ship data
-    let subscriptionMessage = {
-        "APIKey": "289f4bd3ce880b52e71a494d92317daedab2e27a", // Your AISstream.io API key
-        "BoundingBoxes": [[[-10, 45], [10, 55]]], // Larger English Channel/North Sea area
-        "FilterMessageTypes": ["PositionReport"] // Only receive position report messages
-    };
-
-    // Send the subscription message to start receiving data
-    socket.send(JSON.stringify(subscriptionMessage));
-    console.log('Subscription message sent:', subscriptionMessage);
-};
-
-// Event handler for incoming WebSocket messages
-socket.onmessage = function(event) {
+async function fetchPositions() {
     try {
-        let data = JSON.parse(event.data);
-        console.log('Received message type:', data.MessageType);
-        console.log('Full message:', data);
+        const nameParam = callsigns.join(",");
+        const targetUrl = `https://api.aprs.fi/api/get?name=${encodeURIComponent(nameParam)}&what=loc&apikey=${API_KEY}&format=json`;
+        
+        // Using a CORS proxy to fix the "CORS error"
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
 
-        if (data.MessageType === 'PositionReport') {
-            let report = data.Message.PositionReport;
-            let lat = report.Latitude;
-            let lon = report.Longitude;
-            let mmsi = report.UserID;
-            let heading = report.Heading;
+        const resp = await fetch(proxyUrl);
+        const json = await resp.json();
 
-            if (markers.has(mmsi)) {
-                markers.get(mmsi).setLatLng([lat, lon]);
-            } else {
-                let marker = L.marker([lat, lon], { icon: shipIcon }).addTo(map);
-                marker.bindPopup('Ship MMSI: ' + mmsi + ' Heading: ' + (heading || 'N/A'));
-                markers.set(mmsi, marker);
+        if (json.result === "ok" && json.entries) {
+            const bounds = L.latLngBounds();
+            
+            json.entries.forEach(entry => {
+                const lat = parseFloat(entry.lat);
+                const lon = parseFloat(entry.lng);
+                
+                if (markers.has(entry.name)) {
+                    markers.get(entry.name).setLatLng([lat, lon]);
+                } else {
+                    const marker = L.marker([lat, lon], { icon: shipIcon }).addTo(map);
+                    marker.bindPopup(`<b>Ship:</b> ${entry.name}`);
+                    markers.set(entry.name, marker);
+                }
+                bounds.extend([lat, lon]);
+            });
+
+            // Automatically zoom the map to show all found ships
+            if (json.entries.length > 0) {
+                map.fitBounds(bounds, { padding: [50, 50] });
             }
         }
-
-    } catch (e) {
-        console.error('Error processing message:', e);
+    } catch (err) {
+        console.error("Tracker Error:", err);
     }
-};
+}
+
+fetchPositions();
+setInterval(fetchPositions, 60000); // Update every minute
