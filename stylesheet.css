@@ -14,12 +14,11 @@ h1 {
     height: 600px;
 }
 
-/* Style for ship icons */
-.ship-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid white;
-    border-radius: 50%;
-    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+/* Style for ship arrow icons */
+.ship-arrow-icon {
+    pointer-events: auto;
+}
+
+.ship-arrow-icon img {
+    display: block;
 }
