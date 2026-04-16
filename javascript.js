@@ -12,9 +12,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const closeSidebarButton = document.getElementById('close-sidebar');
     const shipDetails = document.getElementById('ship-details');
     const selectedIndicator = document.getElementById('selected-indicator');
+    const shipImage = document.getElementById('ship-image');
+    const shipImageCaption = document.getElementById('ship-image-caption');
     let selectedMarker = null;
 
-    if (!sidebar || !closeSidebarButton || !shipDetails) {
+    if (!sidebar || !closeSidebarButton || !shipDetails || !shipImage || !shipImageCaption) {
         console.error('Sidebar elements are missing from the page.');
         return;
     }
@@ -45,6 +47,125 @@ window.addEventListener('DOMContentLoaded', () => {
         const mmsi = ship.MMSI || 'Unknown';
         selectedIndicator.textContent = `Selected ship: ${shipName} (${category}, MMSI ${mmsi})`;
     }
+
+    function clearShipImage() {
+        shipImage.hidden = true;
+        shipImage.src = '';
+        shipImage.alt = '';
+        shipImageCaption.textContent = 'Searching for a Wikidata image...';
+    }
+
+    function setShipImage(url, title) {
+        shipImage.src = url;
+        shipImage.alt = `Photo of ${title}`;
+        shipImage.hidden = false;
+        shipImageCaption.textContent = `Image source: Wikimedia Commons via Wikidata (${title})`;
+    }
+
+    function showNoShipImage() {
+        shipImage.hidden = true;
+        shipImage.src = '';
+        shipImage.alt = '';
+        shipImageCaption.textContent = 'No Wikidata image found for this ship.';
+    }
+
+    function commonsFileUrl(fileName) {
+        const normalized = String(fileName || '').replace(/^File:/i, '').trim();
+        return normalized ? `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(normalized)}` : null;
+    }
+
+    async function getWikidataImageByIMO(imo) {
+        const query = `SELECT ?item ?itemLabel ?image WHERE { ?item wdt:P371 "${imo}" . OPTIONAL { ?item wdt:P18 ?image } SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } } LIMIT 1`;
+        const url = new URL('https://query.wikidata.org/sparql');
+        url.search = new URLSearchParams({ query, format: 'json' });
+
+        const response = await fetch(url, { headers: { Accept: 'application/sparql-results+json' } });
+        if (!response.ok) return null;
+
+        const data = await response.json();
+        const result = data?.results?.bindings?.[0];
+        if (!result) return null;
+
+        return result.image?.value || null;
+    }
+
+    async function getWikidataImageByMMSI(mmsi) {
+        const query = `SELECT ?item ?itemLabel ?image WHERE { ?item wdt:P587 "${mmsi}" . OPTIONAL { ?item wdt:P18 ?image } SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } } LIMIT 1`;
+        const url = new URL('https://query.wikidata.org/sparql');
+        url.search = new URLSearchParams({ query, format: 'json' });
+
+        const response = await fetch(url, { headers: { Accept: 'application/sparql-results+json' } });
+        if (!response.ok) return null;
+
+        const data = await response.json();
+        const result = data?.results?.bindings?.[0];
+        if (!result) return null;
+
+        return result.image?.value || null;
+    }
+
+    async function searchWikidataEntity(query) {
+        const url = new URL('https://www.wikidata.org/w/api.php');
+        url.search = new URLSearchParams({
+            action: 'wbsearchentities',
+            search: query,
+            language: 'en',
+            format: 'json',
+            limit: '5',
+            origin: '*'
+        }).toString();
+
+        const response = await fetch(url);
+        if (!response.ok) return [];
+        const data = await response.json();
+        return data?.search || [];
+    }
+
+    async function getWikidataImageByEntityId(entityId) {
+        const url = new URL('https://www.wikidata.org/w/api.php');
+        url.search = new URLSearchParams({
+            action: 'wbgetentities',
+            ids: entityId,
+            props: 'claims|labels',
+            languages: 'en',
+            format: 'json',
+            origin: '*'
+        }).toString();
+
+        const response = await fetch(url);
+        if (!response.ok) return null;
+        const data = await response.json();
+        const entity = data?.entities?.[entityId];
+        if (!entity) return null;
+
+        const imageClaim = entity.claims?.P18?.[0];
+        const imageValue = imageClaim?.mainsnak?.datavalue?.value;
+        if (!imageValue) return null;
+        return commonsFileUrl(imageValue);
+    }
+
+    async function fetchShipImage(ship) {
+        clearShipImage();
+
+        if (ship.MMSI) {
+            const url = await getWikidataImageByMMSI(ship.MMSI);
+            if (url) {
+                setShipImage(url, `MMSI ${ship.MMSI}`);
+                return;
+            }
+        }
+
+        if (ship.IMO && ship.IMO !== '0') {
+            const url = await getWikidataImageByIMO(ship.IMO);
+            if (url) {
+                setShipImage(url, `IMO ${ship.IMO}`);
+                return;
+            }
+        }
+
+        showNoShipImage();
+    }
+
 
 // Function to categorize vessel types based on AIS type codes
     function getVesselTypeCategory(typeCode) {
@@ -148,7 +269,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             marker.bindPopup(`MMSI: ${ship.MMSI || 'unknown'}<br>Speed: ${ship.SOG || 'N/A'} kn<br>Heading: ${heading.toFixed(1)}°`);
 
-            marker.on('click', () => {
+            marker.on('click', async () => {
                 if (selectedMarker && selectedMarker !== marker) {
                     selectedMarker.setIcon(createShipIcon(selectedMarker.shipInfo.ship, selectedMarker.shipInfo.heading, false));
                 }
@@ -158,6 +279,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 shipDetails.innerHTML = formatShipInfo(ship, heading);
                 updateSelectedIndicator(ship);
                 showSidebar();
+                await fetchShipImage(ship);
             });
         });
 
