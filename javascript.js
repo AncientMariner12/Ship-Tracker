@@ -11,10 +11,39 @@ window.addEventListener('DOMContentLoaded', () => {
     const sidebar = document.getElementById('sidebar');
     const closeSidebarButton = document.getElementById('close-sidebar');
     const shipDetails = document.getElementById('ship-details');
+    const selectedIndicator = document.getElementById('selected-indicator');
+    let selectedMarker = null;
 
     if (!sidebar || !closeSidebarButton || !shipDetails) {
         console.error('Sidebar elements are missing from the page.');
         return;
+    }
+
+    function createShipIcon(ship, heading, isSelected = false) {
+        const arrowColor = getTypeColor(ship.TYPE);
+        const strokeWidth = isSelected ? 4 : 2;
+        const selectedClass = isSelected ? ' selected' : '';
+
+        return L.divIcon({
+            className: 'ship-arrow-icon',
+            html: `<div class="ship-arrow-wrapper${selectedClass}" style="width: 28px; height: 28px; transform: rotate(${heading}deg); transform-origin: center center; display: flex; align-items: center; justify-content: center;">
+                <svg viewBox="0 0 32 32" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+                    <g transform="translate(-103 -211.36)">
+                        <path d="m134 242.36-30-15 30-15-10 15 10 15z" fill="none" stroke="${arrowColor}" stroke-linecap="round" stroke-linejoin="round" stroke-width="${strokeWidth}"/>
+                    </g>
+                </svg>
+            </div>`,
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
+        });
+    }
+
+    function updateSelectedIndicator(ship) {
+        if (!selectedIndicator) return;
+        const shipName = ship.NAME || 'Unknown';
+        const category = getVesselTypeCategory(ship.TYPE);
+        const mmsi = ship.MMSI || 'Unknown';
+        selectedIndicator.textContent = `Selected ship: ${shipName} (${category}, MMSI ${mmsi})`;
     }
 
 // Function to categorize vessel types based on AIS type codes
@@ -113,25 +142,21 @@ window.addEventListener('DOMContentLoaded', () => {
             }
             if (!Number.isFinite(heading)) heading = 0;
 
-            const arrowColor = getTypeColor(ship.TYPE);
-            const arrowIcon = L.divIcon({
-                className: 'ship-arrow-icon',
-                html: `<div style="width: 28px; height: 28px; transform: rotate(${heading}deg); transform-origin: center center; display: flex; align-items: center; justify-content: center;">
-                    <svg viewBox="0 0 32 32" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
-                        <g transform="translate(-103 -211.36)">
-                            <path d="m134 242.36-30-15 30-15-10 15 10 15z" fill="none" stroke="${arrowColor}" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-                        </g>
-                    </svg>
-                </div>`,
-                iconSize: [28, 28],
-                iconAnchor: [14, 14]
-            });
+            const icon = createShipIcon(ship, heading, false);
+            const marker = L.marker([lat, lon], { icon }).addTo(map);
+            marker.shipInfo = { ship, heading };
 
-            const marker = L.marker([lat, lon], { icon: arrowIcon }).addTo(map);
             marker.bindPopup(`MMSI: ${ship.MMSI || 'unknown'}<br>Speed: ${ship.SOG || 'N/A'} kn<br>Heading: ${heading.toFixed(1)}°`);
 
             marker.on('click', () => {
+                if (selectedMarker && selectedMarker !== marker) {
+                    selectedMarker.setIcon(createShipIcon(selectedMarker.shipInfo.ship, selectedMarker.shipInfo.heading, false));
+                }
+
+                selectedMarker = marker;
+                marker.setIcon(createShipIcon(ship, heading, true));
                 shipDetails.innerHTML = formatShipInfo(ship, heading);
+                updateSelectedIndicator(ship);
                 showSidebar();
             });
         });
