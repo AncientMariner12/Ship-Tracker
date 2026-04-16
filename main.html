@@ -12,6 +12,18 @@
 </head>
 <body>
     <h1>Real-Time Ship Tracker</h1>
-    <div id="map" style="height: 600px;"></div>
+    <div class="app-shell">
+        <div id="map" class="map"></div>
+        <aside id="sidebar" class="sidebar" aria-hidden="true">
+            <button id="close-sidebar" aria-label="Close ship details sidebar">×</button>
+            <div class="sidebar-header">
+                <h2>Ship details</h2>
+                <p>Select a ship marker to view additional information.</p>
+            </div>
+            <div id="ship-details" class="ship-details">
+                <p>No ship selected yet.</p>
+            </div>
+        </aside>
+    </div>
 </body>
 </html>
