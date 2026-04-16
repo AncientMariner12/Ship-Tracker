@@ -16,6 +16,29 @@ window.addEventListener('DOMContentLoaded', () => {
     const shipImageCaption = document.getElementById('ship-image-caption');
     let selectedMarker = null;
 
+    // Locate me button functionality
+    const locateButton = document.getElementById('locate-button');
+    let userMarker = null;
+
+    locateButton.addEventListener('click', () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                if (userMarker) {
+                    map.removeLayer(userMarker);
+                }
+                userMarker = L.marker([lat, lon]).addTo(map);
+                userMarker.bindPopup('Your Location').openPopup();
+                map.setView([lat, lon], 10);
+            }, (error) => {
+                alert('Unable to retrieve your location: ' + error.message);
+            });
+        } else {
+            alert('Geolocation is not supported by this browser.');
+        }
+    });
+
     if (!sidebar || !closeSidebarButton || !shipDetails || !shipImage || !shipImageCaption) {
         console.error('Sidebar elements are missing from the page.');
         return;
@@ -211,22 +234,36 @@ window.addEventListener('DOMContentLoaded', () => {
         return '#7f8c8d';
     }
 
-    function formatShipInfo(ship, heading) {
+    function formatBasicInfo(ship) {
         return `
             <dl>
                 <dt>Name</dt><dd>${ship.NAME || 'Unknown'}</dd>
                 <dt>MMSI</dt><dd>${ship.MMSI || 'Unknown'}</dd>
                 <dt>Callsign</dt><dd>${ship.CALLSIGN || 'Unknown'}</dd>
                 <dt>IMO</dt><dd>${ship.IMO || 'Unknown'}</dd>
+                <dt>Type</dt><dd>${ship.TYPE || 'Unknown'}</dd>
+                <dt>Type category</dt><dd>${getVesselTypeCategory(ship.TYPE)}</dd>
+            </dl>
+        `;
+    }
+
+    function formatNavigationInfo(ship, heading) {
+        return `
+            <dl>
                 <dt>Position</dt><dd>${parseFloat(ship.LATITUDE).toFixed(5)}, ${parseFloat(ship.LONGITUDE).toFixed(5)}</dd>
                 <dt>Speed</dt><dd>${ship.SOG || 'N/A'} kn</dd>
                 <dt>Course</dt><dd>${ship.COG || 'N/A'}°</dd>
                 <dt>Heading</dt><dd>${Number.isFinite(heading) ? `${heading.toFixed(1)}°` : 'N/A'}</dd>
                 <dt>NAVSTAT</dt><dd>${ship.NAVSTAT || 'Unknown'}</dd>
-                <dt>Type</dt><dd>${ship.TYPE || 'Unknown'}</dd>
-                <dt>Type category</dt><dd>${getVesselTypeCategory(ship.TYPE)}</dd>
                 <dt>Destination</dt><dd>${ship.DEST || 'Unknown'}</dd>
                 <dt>ETA</dt><dd>${ship.ETA || 'Unknown'}</dd>
+            </dl>
+        `;
+    }
+
+    function formatTechnicalInfo(ship) {
+        return `
+            <dl>
                 <dt>Draught</dt><dd>${ship.DRAUGHT || 'Unknown'}</dd>
                 <dt>Timestamp</dt><dd>${ship.TSTAMP || 'Unknown'}</dd>
             </dl>
@@ -244,6 +281,20 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     closeSidebarButton.addEventListener('click', hideSidebar);
+
+    // Tab switching functionality
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            button.classList.add('active');
+            const tabId = button.getAttribute('data-tab') + '-tab';
+            document.getElementById(tabId).classList.add('active');
+        });
+    });
 
     // Draw ship arrows from local AIS data JSON
     fetch('ais_data.json')
@@ -276,7 +327,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 selectedMarker = marker;
                 marker.setIcon(createShipIcon(ship, heading, true));
-                shipDetails.innerHTML = formatShipInfo(ship, heading);
+                document.getElementById('basic-tab').innerHTML = formatBasicInfo(ship);
+                document.getElementById('navigation-tab').innerHTML = formatNavigationInfo(ship, heading);
+                document.getElementById('technical-tab').innerHTML = formatTechnicalInfo(ship);
                 updateSelectedIndicator(ship);
                 showSidebar();
                 await fetchShipImage(ship);

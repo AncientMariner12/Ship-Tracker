@@ -104,6 +104,41 @@ h1 {
     color: #555;
 }
 
+.tabs {
+    display: flex;
+    margin: 16px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.tab-button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #666;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.tab-button.active {
+    color: #333;
+    border-bottom-color: #007bff;
+}
+
+.tab-button:hover {
+    color: #333;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
 .ship-arrow-wrapper.selected {
     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 0 12px rgba(255, 215, 0, 0.75);
     border-radius: 50%;

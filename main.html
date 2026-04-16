@@ -25,10 +25,24 @@
                 <img id="ship-image" class="ship-image" src="" alt="Ship image" hidden />
                 <div id="ship-image-caption" class="ship-image-caption">No image available yet.</div>
             </div>
+            <div class="tabs">
+                <button class="tab-button active" data-tab="basic">Basic Info</button>
+                <button class="tab-button" data-tab="navigation">Navigation</button>
+                <button class="tab-button" data-tab="technical">Technical</button>
+            </div>
             <div id="ship-details" class="ship-details">
-                <p>No ship selected yet.</p>
+                <div class="tab-content active" id="basic-tab">
+                    <p>No ship selected yet.</p>
+                </div>
+                <div class="tab-content" id="navigation-tab">
+                    <p>No ship selected yet.</p>
+                </div>
+                <div class="tab-content" id="technical-tab">
+                    <p>No ship selected yet.</p>
+                </div>
             </div>
         </aside>
+        <div id="locate-button" class="locate-button" title="Show my location">📍 Show my location</div>
     </div>
 </body>
 </html>
