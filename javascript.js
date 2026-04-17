@@ -14,9 +14,18 @@ window.addEventListener('DOMContentLoaded', () => {
     const selectedIndicator = document.getElementById('selected-indicator');
     const shipImage = document.getElementById('ship-image');
     const shipImageCaption = document.getElementById('ship-image-caption');
+    const addShipButton = document.getElementById('add-ship-button');
+    const addShipPanel = document.getElementById('add-ship-panel');
+    const addShipForm = document.getElementById('add-ship-form');
+    const cancelAddShipButton = document.getElementById('cancel-add-ship');
+    const downloadAISButton = document.getElementById('download-ais-button');
+    const showKeyButton = document.getElementById('show-key-button');
+    const keyPanel = document.getElementById('key-panel');
+    const closeKeyPanel = document.getElementById('close-key-panel');
     let selectedMarker = null;
+    let loadedShips = [];
 
-    // Locate me button functionality
+    // Locate me button functionality: show the user's current position on the map
     const locateButton = document.getElementById('locate-button');
     let userMarker = null;
 
@@ -25,9 +34,12 @@ window.addEventListener('DOMContentLoaded', () => {
             navigator.geolocation.getCurrentPosition((position) => {
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
+
+                // Remove an existing user marker before adding a new one
                 if (userMarker) {
                     map.removeLayer(userMarker);
                 }
+
                 userMarker = L.marker([lat, lon]).addTo(map);
                 userMarker.bindPopup('Your Location').openPopup();
                 map.setView([lat, lon], 10);
@@ -39,11 +51,111 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    if (!sidebar || !closeSidebarButton || !shipDetails || !shipImage || !shipImageCaption) {
-        console.error('Sidebar elements are missing from the page.');
+    if (!sidebar || !closeSidebarButton || !shipDetails || !shipImage || !shipImageCaption || !addShipButton || !addShipPanel || !addShipForm || !cancelAddShipButton || !downloadAISButton || !showKeyButton || !keyPanel || !closeKeyPanel) {
+        console.error('Required page elements are missing from the page.');
         return;
     }
 
+    function toggleAddShipPanel(show) {
+        addShipPanel.classList.toggle('hidden', !show);
+        addShipPanel.setAttribute('aria-hidden', String(!show));
+        if (show) {
+            addShipForm.querySelector('input[name="NAME"]').focus();
+        }
+    }
+
+    function toggleKeyPanel(show) {
+        keyPanel.classList.toggle('hidden', !show);
+        keyPanel.setAttribute('aria-hidden', String(!show));
+    }
+
+    function downloadAISData() {
+        const blob = new Blob([JSON.stringify(loadedShips, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = 'ais_data_updated.json';
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
+    }
+
+    function renderShipMarker(ship, headingOverride = null) {
+        const lat = parseFloat(ship.LATITUDE);
+        const lon = parseFloat(ship.LONGITUDE);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+
+        let heading = Number.isFinite(headingOverride) ? headingOverride : parseFloat(ship.HEADING);
+        if (!Number.isFinite(heading) || heading < 0 || heading >= 360) {
+            heading = parseFloat(ship.COG);
+        }
+        if (!Number.isFinite(heading)) heading = 0;
+
+        const icon = createShipIcon(ship, heading, false);
+        const marker = L.marker([lat, lon], { icon }).addTo(map);
+        marker.shipInfo = { ship, heading };
+
+        marker.bindPopup(`MMSI: ${ship.MMSI || 'unknown'}<br>Speed: ${ship.SOG || 'N/A'} kn<br>Heading: ${heading.toFixed(1)}°`);
+
+        marker.on('click', async () => {
+            if (selectedMarker && selectedMarker !== marker) {
+                selectedMarker.setIcon(createShipIcon(selectedMarker.shipInfo.ship, selectedMarker.shipInfo.heading, false));
+            }
+
+            selectedMarker = marker;
+            marker.setIcon(createShipIcon(ship, heading, true));
+            document.getElementById('basic-tab').innerHTML = formatBasicInfo(ship);
+            document.getElementById('navigation-tab').innerHTML = formatNavigationInfo(ship, heading);
+            document.getElementById('technical-tab').innerHTML = formatTechnicalInfo(ship);
+            updateSelectedIndicator(ship);
+            showSidebar();
+            await fetchShipImage(ship);
+        });
+    }
+
+    addShipButton.addEventListener('click', () => toggleAddShipPanel(true));
+    cancelAddShipButton.addEventListener('click', () => toggleAddShipPanel(false));
+    downloadAISButton.addEventListener('click', downloadAISData);
+    showKeyButton.addEventListener('click', () => toggleKeyPanel(true));
+    closeKeyPanel.addEventListener('click', () => toggleKeyPanel(false));
+
+    addShipForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formData = new FormData(addShipForm);
+        const newShip = {
+            NAME: formData.get('NAME')?.toString().trim() || 'Unnamed ship',
+            MMSI: formData.get('MMSI')?.toString().trim() || '',
+            IMO: formData.get('IMO')?.toString().trim() || '0',
+            CALLSIGN: formData.get('CALLSIGN')?.toString().trim() || 'Unknown',
+            TYPE: formData.get('TYPE')?.toString().trim() || '0',
+            LATITUDE: formData.get('LATITUDE')?.toString().trim() || '0',
+            LONGITUDE: formData.get('LONGITUDE')?.toString().trim() || '0',
+            HEADING: formData.get('HEADING')?.toString().trim() || '0',
+            SOG: formData.get('SOG')?.toString().trim() || '0',
+            COG: formData.get('COG')?.toString().trim() || '0',
+            NAVSTAT: 'Unknown',
+            DEST: formData.get('DEST')?.toString().trim() || 'Unknown',
+            ETA: formData.get('ETA')?.toString().trim() || 'Unknown',
+            DRAUGHT: formData.get('DRAUGHT')?.toString().trim() || 'Unknown',
+            TSTAMP: formData.get('TSTAMP')?.toString().trim() || new Date().toISOString()
+        };
+
+        const lat = parseFloat(newShip.LATITUDE);
+        const lon = parseFloat(newShip.LONGITUDE);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+            alert('Please enter valid latitude and longitude values.');
+            return;
+        }
+
+        loadedShips.push(newShip);
+        renderShipMarker(newShip);
+        addShipForm.reset();
+        toggleAddShipPanel(false);
+        map.setView([lat, lon], 8);
+    });
+
+    // Build a rotated SVG arrow marker for a ship, using its AIS type to assign the color.
     function createShipIcon(ship, heading, isSelected = false) {
         const arrowColor = getTypeColor(ship.TYPE);
         const strokeWidth = isSelected ? 4 : 2;
@@ -63,6 +175,7 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Update the sidebar header text with the currently selected ship details.
     function updateSelectedIndicator(ship) {
         if (!selectedIndicator) return;
         const shipName = ship.NAME || 'Unknown';
@@ -71,6 +184,7 @@ window.addEventListener('DOMContentLoaded', () => {
         selectedIndicator.textContent = `Selected ship: ${shipName} (${category}, MMSI ${mmsi})`;
     }
 
+    // Clear the ship image UI while a new image search is underway.
     function clearShipImage() {
         shipImage.hidden = true;
         shipImage.src = '';
@@ -78,6 +192,7 @@ window.addEventListener('DOMContentLoaded', () => {
         shipImageCaption.textContent = 'Searching for a Wikidata image...';
     }
 
+    // Display a ship image once it has been found.
     function setShipImage(url, title) {
         shipImage.src = url;
         shipImage.alt = `Photo of ${title}`;
@@ -85,6 +200,7 @@ window.addEventListener('DOMContentLoaded', () => {
         shipImageCaption.textContent = `Image source: Wikimedia Commons via Wikidata (${title})`;
     }
 
+    // Show a fallback message when no image is available in Wikidata.
     function showNoShipImage() {
         shipImage.hidden = true;
         shipImage.src = '';
@@ -97,6 +213,7 @@ window.addEventListener('DOMContentLoaded', () => {
         return normalized ? `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(normalized)}` : null;
     }
 
+    // Search Wikidata via SPARQL for a ship entry by its IMO number and return the first image found.
     async function getWikidataImageByIMO(imo) {
         const query = `SELECT ?item ?itemLabel ?image WHERE { ?item wdt:P371 "${imo}" . OPTIONAL { ?item wdt:P18 ?image } SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } } LIMIT 1`;
         const url = new URL('https://query.wikidata.org/sparql');
@@ -112,6 +229,7 @@ window.addEventListener('DOMContentLoaded', () => {
         return result.image?.value || null;
     }
 
+    // Search Wikidata via SPARQL for a ship entry by its MMSI number and return the first image found.
     async function getWikidataImageByMMSI(mmsi) {
         const query = `SELECT ?item ?itemLabel ?image WHERE { ?item wdt:P587 "${mmsi}" . OPTIONAL { ?item wdt:P18 ?image } SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } } LIMIT 1`;
         const url = new URL('https://query.wikidata.org/sparql');
@@ -167,6 +285,7 @@ window.addEventListener('DOMContentLoaded', () => {
         return commonsFileUrl(imageValue);
     }
 
+    // Try to load a ship image from Wikidata, with MMSI as the primary lookup key and IMO as a fallback.
     async function fetchShipImage(ship) {
         clearShipImage();
 
@@ -191,6 +310,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 // Function to categorize vessel types based on AIS type codes
+    // Convert AIS vessel type codes into human-readable categories used in the sidebar.
     function getVesselTypeCategory(typeCode) {
         const type = Number(typeCode);
         if (!Number.isFinite(type)) return 'Unknown';
@@ -212,7 +332,7 @@ window.addEventListener('DOMContentLoaded', () => {
         return 'Unknown';
     }
 
-// Function to assign colors to ship markers based on AIS type codes
+    // Convert AIS vessel type codes into marker colors for the map.
     function getTypeColor(typeCode) {
         const type = Number(typeCode);
         if (!Number.isFinite(type)) return '#7f8c8d';
@@ -296,56 +416,27 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Draw ship arrows from local AIS data JSON
+    // Draw ship arrows from local AIS data JSON and wire up marker click behavior.
     fetch('ais_data.json')
         .then((response) => response.json())
         .then((ships) => {
-        // Avoid rendering too many markers at once in the browser
-        const maxMarkers = 400;
+            loadedShips = ships;
+            // Avoid rendering too many markers at once in the browser
+            const maxMarkers = 400;
 
-        ships.slice(0, maxMarkers).forEach((ship) => {
-            const lat = parseFloat(ship.LATITUDE);
-            const lon = parseFloat(ship.LONGITUDE);
-            if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+            ships.slice(0, maxMarkers).forEach((ship) => renderShipMarker(ship));
 
-            let heading = parseFloat(ship.HEADING);
-            if (!Number.isFinite(heading) || heading < 0 || heading >= 360) {
-                heading = parseFloat(ship.COG);
-            }
-            if (!Number.isFinite(heading)) heading = 0;
-
-            const icon = createShipIcon(ship, heading, false);
-            const marker = L.marker([lat, lon], { icon }).addTo(map);
-            marker.shipInfo = { ship, heading };
-
-            marker.bindPopup(`MMSI: ${ship.MMSI || 'unknown'}<br>Speed: ${ship.SOG || 'N/A'} kn<br>Heading: ${heading.toFixed(1)}°`);
-
-            marker.on('click', async () => {
-                if (selectedMarker && selectedMarker !== marker) {
-                    selectedMarker.setIcon(createShipIcon(selectedMarker.shipInfo.ship, selectedMarker.shipInfo.heading, false));
+            // Center the map on the first ship in the data set, if available.
+            if (ships.length > 0) {
+                const first = ships[0];
+                const fLat = parseFloat(first.LATITUDE);
+                const fLon = parseFloat(first.LONGITUDE);
+                if (Number.isFinite(fLat) && Number.isFinite(fLon)) {
+                    map.setView([fLat, fLon], 6);
                 }
-
-                selectedMarker = marker;
-                marker.setIcon(createShipIcon(ship, heading, true));
-                document.getElementById('basic-tab').innerHTML = formatBasicInfo(ship);
-                document.getElementById('navigation-tab').innerHTML = formatNavigationInfo(ship, heading);
-                document.getElementById('technical-tab').innerHTML = formatTechnicalInfo(ship);
-                updateSelectedIndicator(ship);
-                showSidebar();
-                await fetchShipImage(ship);
-            });
-        });
-
-        if (ships.length > 0) {
-            const first = ships[0];
-            const fLat = parseFloat(first.LATITUDE);
-            const fLon = parseFloat(first.LONGITUDE);
-            if (Number.isFinite(fLat) && Number.isFinite(fLon)) {
-                map.setView([fLat, fLon], 6);
             }
-        }
-    })
-    .catch((err) => {
-        console.error('Unable to load AIS data:', err);
-    });
+        })
+        .catch((err) => {
+            console.error('Unable to load AIS data:', err);
+        });
 });

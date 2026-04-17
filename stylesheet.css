@@ -9,9 +9,16 @@ h1 {
     padding: 10px;
 }
 
+html,
+body {
+    min-height: 100%;
+    height: 100%;
+}
+
 #map {
     width: 100%;
-    height: 600px;
+    height: calc(100vh - 72px);
+    min-height: 400px;
 }
 
 /* Style for ship arrow icons */
@@ -29,7 +36,8 @@ h1 {
 
 #map {
     width: 100%;
-    height: 600px;
+    height: calc(100vh - 72px);
+    min-height: 400px;
 }
 
 .sidebar {
@@ -156,4 +164,158 @@ h1 {
 
 .ship-details dd {
     margin: 0 0 12px 0;
+}
+
+.map-controls {
+    position: absolute;
+    left: 12px;
+    bottom: 36px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    z-index: 1100;
+}
+
+.control-button,
+.secondary-button {
+    border: none;
+    background: #007bff;
+    color: white;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+}
+
+.control-button:hover,
+.secondary-button:hover {
+    background: #0056b3;
+}
+
+.legend-panel {
+    position: fixed;
+    bottom: 80px;
+    left: 12px;
+    width: min(320px, calc(100vw - 24px));
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 16px;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.18);
+    z-index: 1200;
+    padding: 18px;
+}
+
+.legend-panel.hidden {
+    display: none;
+}
+
+.legend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.legend-header h2 {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.close-key {
+    border: none;
+    background: transparent;
+    color: #333;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.legend-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 10px;
+}
+
+.legend-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+    color: #333;
+}
+
+.legend-swatch {
+    width: 18px;
+    height: 18px;
+    display: inline-block;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.legend-swatch-default { background: #7f8c8d; }
+.legend-swatch-wing { background: #8a2be2; }
+.legend-swatch-fishing { background: #2e8b57; }
+.legend-swatch-towing { background: #ff8c00; }
+.legend-swatch-dredging { background: #8b4513; }
+.legend-swatch-hsc { background: #1e90ff; }
+.legend-swatch-passenger { background: #ff69b4; }
+.legend-swatch-cargo { background: #228b22; }
+.legend-swatch-tanker { background: #800000; }
+.legend-swatch-other { background: #696969; }
+
+.add-ship-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(680px, calc(100% - 40px));
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.22);
+    border-radius: 16px;
+    padding: 22px;
+    z-index: 1200;
+}
+
+.add-ship-panel.hidden {
+    display: none;
+}
+
+.add-ship-panel form {
+    display: grid;
+    gap: 14px;
+}
+
+.add-ship-panel h2 {
+    margin: 0 0 4px;
+    font-size: 1.2rem;
+}
+
+.field-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.field-row label {
+    display: grid;
+    gap: 6px;
+    font-size: 0.9rem;
+}
+
+.field-row input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 0.95rem;
+}
+
+.panel-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
 }

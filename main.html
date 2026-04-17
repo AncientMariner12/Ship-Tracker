@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="referrer" content="origin">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="stylesheet.css">
     <title>Ship Tracker</title>
@@ -42,7 +41,68 @@
                 </div>
             </div>
         </aside>
-        <div id="locate-button" class="locate-button" title="Show my location">📍 Show my location</div>
+        <div class="map-controls">
+            <button id="locate-button" class="control-button" title="Show my location">📍 Locate me</button>
+            <button id="add-ship-button" class="control-button" title="Add a new ship">➕ Add ship</button>
+            <button id="download-ais-button" class="control-button" title="Download current AIS data">⬇️ Download data</button>
+            <button id="show-key-button" class="control-button" title="Show map key">🗺️ Key</button>
+        </div>
+        <div id="add-ship-panel" class="add-ship-panel hidden" aria-hidden="true">
+            <form id="add-ship-form">
+                <h2>Add Ship</h2>
+                <div class="field-row">
+                    <label><span>Name</span><input name="NAME" placeholder="Ship Name" /></label>
+                    <label><span>MMSI</span><input name="MMSI" placeholder="123456789" /></label>
+                </div>
+                <div class="field-row">
+                    <label><span>IMO</span><input name="IMO" placeholder="IMO number" /></label>
+                    <label><span>Callsign</span><input name="CALLSIGN" placeholder="Callsign" /></label>
+                </div>
+                <div class="field-row">
+                    <label><span>Type</span><input name="TYPE" placeholder="AIS type code" /></label>
+                    <label><span>Latitude</span><input name="LATITUDE" placeholder="50.12345" /></label>
+                </div>
+                <div class="field-row">
+                    <label><span>Longitude</span><input name="LONGITUDE" placeholder="0.12345" /></label>
+                    <label><span>Heading</span><input name="HEADING" placeholder="0-359" /></label>
+                </div>
+                <div class="field-row">
+                    <label><span>Speed (kn)</span><input name="SOG" placeholder="10" /></label>
+                    <label><span>Course</span><input name="COG" placeholder="180" /></label>
+                </div>
+                <div class="field-row">
+                    <label><span>Destination</span><input name="DEST" placeholder="Destination" /></label>
+                    <label><span>ETA</span><input name="ETA" placeholder="YYYY-MM-DD" /></label>
+                </div>
+                <div class="field-row">
+                    <label><span>Draught</span><input name="DRAUGHT" placeholder="5.0" /></label>
+                    <label><span>Timestamp</span><input name="TSTAMP" placeholder="2026-04-17 12:34:56" /></label>
+                </div>
+                <div class="panel-actions">
+                    <button type="submit" class="secondary-button">Save ship</button>
+                    <button type="button" id="cancel-add-ship" class="secondary-button">Cancel</button>
+                </div>
+            </form>
+        </div>
+        <div id="key-panel" class="legend-panel hidden" aria-hidden="true">
+            <div class="legend-header">
+                <h2>Map Key</h2>
+                <button id="close-key-panel" class="close-key" aria-label="Close map key">×</button>
+            </div>
+            <p>Ship markers are colored by AIS vessel type:</p>
+            <ul class="legend-list">
+                <li><span class="legend-swatch legend-swatch-default"></span>Unknown / default</li>
+                <li><span class="legend-swatch legend-swatch-wing"></span>Wing in Ground (WIG)</li>
+                <li><span class="legend-swatch legend-swatch-fishing"></span>Fishing</li>
+                <li><span class="legend-swatch legend-swatch-towing"></span>Towing</li>
+                <li><span class="legend-swatch legend-swatch-dredging"></span>Dredging</li>
+                <li><span class="legend-swatch legend-swatch-hsc"></span>High Speed Craft (HSC)</li>
+                <li><span class="legend-swatch legend-swatch-passenger"></span>Passenger</li>
+                <li><span class="legend-swatch legend-swatch-cargo"></span>Cargo</li>
+                <li><span class="legend-swatch legend-swatch-tanker"></span>Tanker</li>
+                <li><span class="legend-swatch legend-swatch-other"></span>Other Type</li>
+            </ul>
+        </div>
     </div>
 </body>
 </html>
