@@ -13,8 +13,8 @@
     <h1>Real-Time Ship Tracker</h1>
     <div class="app-shell">
         <div id="map" class="map"></div>
-        <aside id="sidebar" class="sidebar" aria-hidden="true">
-            <button id="close-sidebar" aria-label="Close ship details sidebar">×</button>
+        <aside id="sidebar" class="sidebar">
+            <button id="close-sidebar">×</button>
             <div class="sidebar-header">
                 <h2>Ship details</h2>
                 <p>Select a ship marker to view additional information.</p>
@@ -47,7 +47,7 @@
             <button id="download-ais-button" class="control-button" title="Download current AIS data">⬇️ Download data</button>
             <button id="show-key-button" class="control-button" title="Show map key">🗺️ Key</button>
         </div>
-        <div id="add-ship-panel" class="add-ship-panel hidden" aria-hidden="true">
+        <div id="add-ship-panel" class="add-ship-panel hidden">
             <form id="add-ship-form">
                 <h2>Add Ship</h2>
                 <div class="field-row">
@@ -84,10 +84,10 @@
                 </div>
             </form>
         </div>
-        <div id="key-panel" class="legend-panel hidden" aria-hidden="true">
+        <div id="key-panel" class="legend-panel hidden">
             <div class="legend-header">
                 <h2>Map Key</h2>
-                <button id="close-key-panel" class="close-key" aria-label="Close map key">×</button>
+                <button id="close-key-panel" class="close-key">×</button>
             </div>
             <p>Ship markers are colored by AIS vessel type:</p>
             <ul class="legend-list">

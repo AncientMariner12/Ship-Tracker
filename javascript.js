@@ -58,7 +58,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function toggleAddShipPanel(show) {
         addShipPanel.classList.toggle('hidden', !show);
-        addShipPanel.setAttribute('aria-hidden', String(!show));
         if (show) {
             addShipForm.querySelector('input[name="NAME"]').focus();
         }
@@ -66,7 +65,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function toggleKeyPanel(show) {
         keyPanel.classList.toggle('hidden', !show);
-        keyPanel.setAttribute('aria-hidden', String(!show));
     }
 
     function downloadAISData() {
@@ -392,12 +390,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function showSidebar() {
         sidebar.classList.add('visible');
-        sidebar.setAttribute('aria-hidden', 'false');
     }
 
     function hideSidebar() {
         sidebar.classList.remove('visible');
-        sidebar.setAttribute('aria-hidden', 'true');
     }
 
     closeSidebarButton.addEventListener('click', hideSidebar);
