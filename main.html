@@ -1,56 +1,90 @@
+<!-- SHIP TRACKER - HTML -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Basic page metadata -->
     <meta charset="UTF-8">
+    <!-- Referrer policy for security and privacy -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
+    
+    <!-- Leaflet CSS library for map styling -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Custom application stylesheet -->
     <link rel="stylesheet" href="stylesheet.css">
-    <title>
-        Ship Tracker</title>
+    
+    <title>Ship Tracker</title>
+    
+    <!-- Leaflet JavaScript library for interactive map functionality -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!--  JavaScript load-->
     <script src="javascript.js" defer></script>
 </head>
 <body>
+    <!-- Main header -->
     <h1>Ship Tracker</h1>
+    <!-- Main shell containing the map and sidebar -->
     <div class="app-shell">
+        <!-- Interactive Leaflet map container -->
         <div id="map" class="map"></div>
+        
+        <!-- Sidebar panel for displaying ship details -->
         <aside id="sidebar" class="sidebar">
+            <!-- Close button -->
             <button id="close-sidebar">×</button>
+            
+            <!-- Sidebar header -->
             <div class="sidebar-header">
                 <h2>Ship details</h2>
                 <p>Select a ship marker to view additional information.</p>
                 <div id="selected-indicator" class="selected-indicator">No ship selected</div>
             </div>
+            
+            <!--ship image from Wikidata -->
             <div id="ship-image-container" class="ship-image-container">
                 <img id="ship-image" class="ship-image" src="" alt="Ship image" hidden />
                 <div id="ship-image-caption" class="ship-image-caption">No image available yet.</div>
             </div>
+            
+            <!-- Tab navigation for different information categories -->
             <div class="tabs">
                 <button class="tab-button active" data-tab="basic">Basic Info</button>
                 <button class="tab-button" data-tab="navigation">Navigation</button>
                 <button class="tab-button" data-tab="technical">Technical</button>
             </div>
+            
+            <!-- Tab content containers for ship information -->
             <div id="ship-details" class="ship-details">
+                <!-- Basic Information Tab: Name, MMSI, Callsign, IMO, Type, Category -->
                 <div class="tab-content active" id="basic-tab">
                     <p>No ship selected yet.</p>
                 </div>
+                <!-- Navigation Tab: Position, Speed, Course, Heading, Destination, ETA -->
                 <div class="tab-content" id="navigation-tab">
                     <p>No ship selected yet.</p>
                 </div>
+                <!-- Technical Tab: Draught, Timestamp -->
                 <div class="tab-content" id="technical-tab">
                     <p>No ship selected yet.</p>
                 </div>
             </div>
         </aside>
+        <!-- buttons -->
         <div class="map-controls">
+            <!-- Show user's current location -->
             <button id="locate-button" class="control-button" title="Show my location">📍 Locate me</button>
+            <!-- Open panel to add a new ship manually -->
             <button id="add-ship-button" class="control-button" title="Add a new ship">➕ Add ship</button>
+            <!-- Download current ship data as JSON file -->
             <button id="download-ais-button" class="control-button" title="Download current AIS data">⬇️ Download data</button>
+            <!-- Show map key -->
             <button id="show-key-button" class="control-button" title="Show map key">🗺️ Key</button>
         </div>
+        <!--  popup for adding new ships manually -->
         <div id="add-ship-panel" class="add-ship-panel hidden">
             <form id="add-ship-form">
                 <h2>Add Ship</h2>
+                
+                <!-- Ship Identification Fields -->
                 <div class="field-row">
                     <label><span>Name</span><input name="NAME" placeholder="Ship Name" /></label>
                     <label><span>MMSI</span><input name="MMSI" placeholder="123456789" /></label>
@@ -59,6 +93,8 @@
                     <label><span>IMO</span><input name="IMO" placeholder="IMO number" /></label>
                     <label><span>Callsign</span><input name="CALLSIGN" placeholder="Callsign" /></label>
                 </div>
+                
+                <!-- Location and Orientation Fields -->
                 <div class="field-row">
                     <label><span>Type</span><input name="TYPE" placeholder="AIS type code" /></label>
                     <label><span>Latitude</span><input name="LATITUDE" placeholder="50.12345" /></label>
@@ -67,6 +103,8 @@
                     <label><span>Longitude</span><input name="LONGITUDE" placeholder="0.12345" /></label>
                     <label><span>Heading</span><input name="HEADING" placeholder="0-359" /></label>
                 </div>
+                
+                <!-- Navigation Fields -->
                 <div class="field-row">
                     <label><span>Speed (kn)</span><input name="SOG" placeholder="10" /></label>
                     <label><span>Course</span><input name="COG" placeholder="180" /></label>
@@ -75,16 +113,21 @@
                     <label><span>Destination</span><input name="DEST" placeholder="Destination" /></label>
                     <label><span>ETA</span><input name="ETA" placeholder="YYYY-MM-DD" /></label>
                 </div>
+                
+                <!-- Technical Fields -->
                 <div class="field-row">
                     <label><span>Draught</span><input name="DRAUGHT" placeholder="5.0" /></label>
                     <label><span>Timestamp</span><input name="TSTAMP" placeholder="2026-04-17 12:34:56" /></label>
                 </div>
+                
+                <!-- Form Actions -->
                 <div class="panel-actions">
                     <button type="submit" class="secondary-button">Save ship</button>
                     <button type="button" id="cancel-add-ship" class="secondary-button">Cancel</button>
                 </div>
             </form>
         </div>
+        <!-- Key showing color codes for different vessel types -->
         <div id="key-panel" class="legend-panel hidden">
             <div class="legend-header">
                 <h2>Map Key</h2>
