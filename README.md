@@ -11,3 +11,5 @@
 and openstreetmaps.com
 geoloaction api
 wikidata for images
+
+

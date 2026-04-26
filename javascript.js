@@ -7,8 +7,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const map = L.map('map').setView([50, 0], 7);
 
     // Add OpenStreetMap tile layer to display the base map with attribution
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
+    L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager/{z}/{x}/{y}.png', {
+        attribution:"Map tiles by Carto, under CC BY 3.0. Data by OpenStreetMap, under ODbL."
     }).addTo(map);
 
     // Sidebar elements for displaying ship information
