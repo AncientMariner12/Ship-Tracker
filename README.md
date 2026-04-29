@@ -20,7 +20,7 @@ This project uses data and services from the following sources:
 - **Geolocation API**: User location provided by the [W3C Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API) built into modern browsers.
 - **Wikidata & Wikimedia Commons**: Ship images and metadata sourced from [Wikidata](https://www.wikidata.org/) and [Wikimedia Commons](https://commons.wikimedia.org/), under the [Creative Commons licenses](https://creativecommons.org/licenses/).
 
-## To run the program please make sure that the browser allows webapps to acess files or there will be no ship data
+## To run the program please make sure that the browser allows webapps to access files or there will be no ship data
 
 ### Running on a Localhost Server
 
